@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"sync"
-//	"time"
 )
 
 type Fetcher interface {
@@ -21,33 +20,24 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 		return
 	}
 
-	visited.Lock()
-	if visited.urls[url] == true {
+	visited.Lock()	//lock the map
+	if visited.urls[url] == true {	//if this url is already visited, return
 		visited.Unlock()
 		return
 	}
 	visited.urls[url] = true
-	visited.Unlock()
+	visited.Unlock()	//release the lock on map
 
 	body, urls, err := fetcher.Fetch(url)
-
-	fmt.Println("main body: ", body)
-	fmt.Println("main urls: ", urls)
-	fmt.Println("main error: ", err)
-	
-	visited.Lock()
- 	visited.urls[url] = true
-        visited.Unlock()
 	
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	done := make(chan bool)
+	done := make(chan bool)		//create a channel to wait for the completion of all go routines
 
 	for _, nestedUrl := range urls {
 		go func(ur string) {
-			fmt.Printf("-> Crawling child %v of %v with depth %v \n", nestedUrl, url, depth)
 			Crawl(ur, depth-1, fetcher)
 			done <- true
 		}(nestedUrl)
@@ -59,13 +49,11 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 		<-done
 	}
 	fmt.Printf("<- Done with %v\n", url)
-	//time.Sleep(time.Second * 10)
 }
 
 func main() {
 	Crawl("http://golang.org/", 4, fetcher)
     
-//	time.Sleep(time.Second * 10)
 
 	fmt.Println("Fetching stats\n--------------")
 
@@ -76,7 +64,6 @@ func main() {
 			fmt.Printf("%v was fetched\n", url)
 		}
 	}
-//	fmt.Printf("visited ", visited.urls)
 }
 
 // fakeFetcher is Fetcher that returns canned results.
